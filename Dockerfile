@@ -25,8 +25,5 @@ COPY --from=builder /app/next.config.js ./
 
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
-
 EXPOSE 3000
 CMD ["yarn", "live"]
