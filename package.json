@@ -1,0 +1,46 @@
+{
+  "name": "challenge-contango",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 8801",
+    "build": "next build",
+    "start": "next start --port 8801",
+    "lint": "next lint",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1687.0",
+    "lucide-react": "^0.539.0",
+    "next": "15.4.6",
+    "next-auth": "^4.24.8",
+    "next-themes": "^0.4.4",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "zod": "^3.22.4",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-s3": "^3.637.0",
+    "@aws-sdk/lib-storage": "^3.758.0",
+    "@eslint/eslintrc": "^3",
+    "@prisma/client": "^6.13.0",
+    "@prisma/extension-accelerate": "^2.0.2",
+    "@tailwindcss/postcss": "^4",
+    "@tanstack/react-query": "^5.66.7",
+    "@tanstack/react-query-devtools": "^5.66.7",
+    "@trpc/client": "^11.0.0-rc.833",
+    "@trpc/next": "^11.0.0-rc.833",
+    "@trpc/react-query": "^11.0.0-rc.833",
+    "@trpc/server": "^11.0.0-rc.833",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.4.6",
+    "prisma": "^6.13.0",
+    "superjson": "^2.2.2",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
