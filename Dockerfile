@@ -1,6 +1,8 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 
+RUN apk add --no-cache openssl
+
 COPY package.json yarn.lock ./
 COPY prisma ./prisma/
 
@@ -14,16 +16,18 @@ RUN yarn build
 FROM node:18-alpine
 WORKDIR /app
 
+RUN apk add --no-cache openssl
+
 COPY --from=builder /app/package.json /app/yarn.lock ./
 COPY --from=builder /app/node_modules ./node_modules
 
-
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/next.config.js ./
 
+
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 CMD ["yarn", "live"]
