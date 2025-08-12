@@ -6,7 +6,7 @@ interface IAmazonS3File {
   file: File | string;
   fileExtension: string;
   contentType: string;
-  key?: string;
+  key: string;
   isPrivate?: boolean;
   dimension?: [number, number, number];
 }
