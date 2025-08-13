@@ -15,7 +15,7 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.AWSDEV_MUBU22 }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
 
             cd /home/ubuntu/challenge-contango
