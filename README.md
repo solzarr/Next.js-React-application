@@ -97,3 +97,22 @@ Deployment is handled via **Docker Compose**, allowing the entire system (fronte
 | **File Storage Scaling** | Many uploads can consume storage quickly. | Use S3-compatible storage with lifecycle rules for deletion. |
 | **Token Limits in AI Models** | Long text inputs may be truncated by AI services. | Use embeddings or field-specific matching to reduce input size. |
 
+
+## Local Development
+`.env` create your environment variable file, and refer `utils/common/_env.ts` for needed variables
+
+
+```bash
+# Install Packages
+yarn     # npm install
+
+# Run Localy
+yarn dev # npm run dev
+
+# Build
+yarn build # npm run build
+
+# Production
+yarn live # npm run libe
+```
+
