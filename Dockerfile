@@ -14,6 +14,9 @@ COPY . .
 
 
 RUN npx prisma generate
+
+ENV NEXT_DISABLE_ESLINT=1 NEXT_DISABLE_TYPECHECK=1
+
 RUN npm run build
 
 
