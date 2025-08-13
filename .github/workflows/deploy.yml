@@ -1,0 +1,37 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - live
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.AWSDEV_MUBU22 }}
+          script: |
+
+            cd /home/ubuntu/challenge-contango
+
+            echo "${{ secrets.ENV_FILE_PRODUCTION }}" > .env
+            echo "✅ .env file created"
+
+
+            git pull origin live
+            echo "✅ Pulled latest code"
+
+            docker compose up --build -d --remove-orphans
+            echo "✅ Docker containers started"
+
+            docker compose exec next-app npx prisma migrate deploy
+            echo "✅ Database migrations applied"
+
+            docker image prune -af
+            echo "✅ Docker images pruned"

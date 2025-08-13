@@ -1,33 +1,31 @@
+FROM node:18-alpine AS deps
+WORKDIR /app
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+RUN \
+  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then npm ci; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
+
 FROM node:18-alpine AS builder
 WORKDIR /app
-
-RUN apk add --no-cache openssl
-
-COPY package.json yarn.lock ./
-COPY prisma ./prisma/
-
-RUN yarn install --frozen-lockfile
-
-RUN yarn prisma generate
-
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN yarn build
 
-FROM node:18-alpine
+
+RUN npx prisma generate
+RUN npm run build
+
+
+FROM node:18-alpine AS runner
 WORKDIR /app
+ENV NODE_ENV=production
 
-RUN apk add --no-cache openssl
-
-COPY --from=builder /app/package.json /app/yarn.lock ./
-COPY --from=builder /app/node_modules ./node_modules
-
-COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./
-
-
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/next.config.js ./next.config.js
 
 EXPOSE 3000
-CMD ["yarn", "live"]
+CMD ["npm", "start"]

@@ -1,22 +1,37 @@
 version: '3.8'
 
 services:
-  app:
-    build: .
+  nginx:
+    container_name: nginx_proxy
+    build: ./nginx
+    restart: always
     ports:
-      - '3000:3000'
+      - '80:80'
+    depends_on:
+      - next-app
+
+  next-app:
+    container_name: devnextp
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+  db:
+    container_name: postgres_db
+    image: postgres:15-alpine
+    restart: always
     environment:
-      - AWS_REGION
-      - AWS_BUCKET
-      - AWS_BUCKET_FOLDER
-      - AWS_KEY
-      - AWS_SECRET
-      - CORS
-      - DATABASE
-      - NEXT_PUBLIC_API_URL
-      - NEXT_PUBLIC_DEFAULT
-      - NEXTAUTH_EXPRIRY
-      - NEXTAUTH_URL
-      - NEXTAUTH_SECRET
-      - NODE_ENV=production
-    restart: unless-stopped
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+    name: DEVNEXTP_DATA
