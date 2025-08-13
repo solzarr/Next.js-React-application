@@ -1,38 +1,66 @@
-name: Deploy to AWS EC2
+name: Deploy to AWS EC2 with ECR (with fallback)
 
 on:
   push:
     branches:
       - live
 
+env:
+  AWS_REGION: ap-southeast-2
+  ECR_REPOSITORY: challenge-contango
+  IMAGE_TAG: latest
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to EC2
+      # 1. Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 3. Log in to Amazon ECR
+      - name: Log in to Amazon ECR
+        run: |
+          aws ecr get-login-password --region $AWS_REGION \
+            | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com
+
+      # 4. Build & Push image to ECR
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
+
+      # 5. SSH into EC2 & Deploy with Fallback
+      - name: Deploy on EC2 (with fallback)
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          timeout: 60m
           script: |
-
+            set -e
             cd /home/ubuntu/challenge-contango
 
-            echo "${{ secrets.ENV_FILE_PRODUCTION }}" > .env
-            echo "✅ .env file created"
+            echo "✅ Trying to pull latest image from ECR..."
+            if aws ecr get-login-password --region $AWS_REGION \
+              | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com \
+              && docker compose pull; then
+              echo "✅ ECR image pulled successfully."
+            else
+              echo "⚠️ ECR pull failed. Falling back to local build..."
+              docker compose build
+            fi
 
-
-            git pull origin live
-            echo "✅ Pulled latest code"
-
-            docker compose up --build -d --remove-orphans
-            echo "✅ Docker containers started"
-
-            docker compose exec next-app npx prisma migrate deploy
-            echo "✅ Database migrations applied"
-
+            echo "🚀 Restarting containers..."
+            docker compose up -d --remove-orphans
             docker image prune -af
-            echo "✅ Docker images pruned"
+            echo "✅ Deployment complete"
