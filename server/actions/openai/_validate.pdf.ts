@@ -1,4 +1,4 @@
-import pdfParse from 'pdf-parse';
+import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import OpenAI from 'openai';
 import { TRegisterProfile } from '@/utils/zod';
 import { EnvConfig, FileBuffer } from '@/utils/common';
@@ -11,8 +11,7 @@ export const MatchPDF = async (input: TRegisterProfile) => {
   const { cv, name, email } = input;
 
   const FB = await FileBuffer(cv);
-
-  if (!FB.buffer) {
+  if (!FB.buffer || FB.size === 0) {
     return false;
   }
 
@@ -21,13 +20,18 @@ export const MatchPDF = async (input: TRegisterProfile) => {
 
   const prompt = `
 You are a strict PDF data checker.
-Given the following extracted PDF text, determine if the NAME and EMAIL match exactly or almost exactly.
+Given the following extracted PDF text, determine if BOTH the NAME and EMAIL are present
+and match the given values exactly or with only minor differences (case or spacing).
+Ignore formatting differences (newlines, extra spaces).
+
 PDF Text:
 """${pdfText}"""
+
 Name to check: "${name}"
 Email to check: "${email}"
+
 Respond with only "true" or "false".
-      `;
+  `;
 
   const aiResponse = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
