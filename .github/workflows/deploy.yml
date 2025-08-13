@@ -1,4 +1,4 @@
-name: Deploy to AWS EC2 with ECR (with fallback)
+name: Deploy to AWS EC2 with ECR
 
 on:
   push:
@@ -15,28 +15,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      # 1. Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-      - name: Log in to Amazon ECR
+
+      # 3. Prepare .env file
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.ENV_FILE_PRODUCTION }}" > .env
+
+      # 4. Log in to Amazon ECR
+      - name: Log in to ECR
         run: |
           aws ecr get-login-password --region $AWS_REGION \
-            | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com
+          | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com
 
-      - name: Build and push Docker image
+      # 5. Build Docker image (no DB connection at build)
+      - name: Build Docker image
         run: |
           docker build \
-            --build-arg DATABASE=${{ secrets.DATABASE }} \
+            --build-arg ENV_FILE=.env \
             -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG .
+
+      # 6. Push Docker image to ECR
+      - name: Push Docker image
+        run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Deploy on EC2 (with fallback)
+      # 7. Deploy on EC2
+      - name: Deploy on EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -46,17 +61,22 @@ jobs:
             set -e
             cd /home/ubuntu/challenge-contango
 
-            echo "✅ Trying to pull latest image from ECR..."
-            if aws ecr get-login-password --region $AWS_REGION \
-              | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com \
-              && docker compose pull; then
-              echo "✅ ECR image pulled successfully."
-            else
-              echo "⚠️ ECR pull failed. Falling back to local build..."
-              docker compose build
-            fi
+            # Save the secret ENV file on EC2
+            echo "${{ secrets.ENV_FILE_PRODUCTION }}" > .env
 
-            echo "🚀 Restarting containers..."
+            # Pull ECR image
+            aws ecr get-login-password --region $AWS_REGION \
+              | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com
+            docker compose pull || echo "ECR pull failed, using local build"
+
+            # Build local image if needed
+            docker compose build
+
+            # Start containers
             docker compose up -d --remove-orphans
+
+            # Run Prisma migrations after DB is up
+            docker compose exec next-app npx prisma migrate deploy
+
             docker image prune -af
             echo "✅ Deployment complete"
