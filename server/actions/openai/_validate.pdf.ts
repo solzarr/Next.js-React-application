@@ -1,4 +1,5 @@
-import pdfParse from 'pdf-parse/lib/pdf-parse.js';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const pdfParse = require('pdf-parse/lib/pdf-parse.js');
 import OpenAI from 'openai';
 import { TRegisterProfile } from '@/utils/zod';
 import { EnvConfig, FileBuffer } from '@/utils/common';
