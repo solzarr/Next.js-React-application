@@ -21,6 +21,10 @@ interface IEnvConfigAws {
   Bucket: IEnvConfigAwsBucket;
 }
 
+interface IEnvConfigAI {
+  OpenAi: string;
+}
+
 interface IEnvConfig {
   Api: IEnvConfigApi;
   Auth: IEnvConfigAuth;
@@ -28,6 +32,7 @@ interface IEnvConfig {
 
   Cors: string[];
   Database: string;
+  Ai: IEnvConfigAI;
 }
 
 const EnvConfig: IEnvConfig = {
@@ -51,6 +56,9 @@ const EnvConfig: IEnvConfig = {
   },
   Cors: process.env.CORS ? process.env.CORS.split(' ') : [],
   Database: process.env.DATABASE || 'postgresql://postgres:password@localhost:5432/db',
+  Ai: {
+    OpenAi: process.env.OPENAI_API_KEY || 'xxx',
+  },
 };
 
 export type { IEnvConfig };

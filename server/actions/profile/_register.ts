@@ -2,9 +2,19 @@ import { S3Upload } from '@/server/actions/aws';
 import { IResponse, Slugify } from '@/utils/common';
 import prisma from '@/utils/prisma';
 import { TRegisterProfile } from '@/utils/zod';
+import { MatchPDF } from '../openai/_validate.pdf';
 
 export const RegisterProfile = async (input: TRegisterProfile): Promise<IResponse<string>> => {
   const { name, email, phone, skills, experience, cv } = input;
+
+  const matchData = await MatchPDF(input);
+
+  if (!matchData) {
+    return {
+      code: 'Failed',
+      message: 'Uploaded CV does not match to personal information provided',
+    };
+  }
 
   const existingUser = await prisma.profile.findUnique({
     where: { email },
