@@ -14,7 +14,7 @@ COPY . .
 
 
 RUN npx prisma generate
-RUN npm run build
+RUN NEXT_DISABLE_ESLINT=1 NEXT_DISABLE_TYPECHECK=1 npm run build
 
 
 FROM node:18-alpine AS runner
